@@ -24,7 +24,8 @@ DAYS = 8
 def get(url):
     # curl, not urllib: Fandango 403s Python's TLS fingerprint even from US IPs
     p = subprocess.run(["curl", "-sL", "--fail", "--max-time", "60",
-                        "-A", UA, url],
+                        "-A", UA, "-H", "Referer: https://www.fandango.com/",
+                        url],
                        capture_output=True, check=True)
     return json.loads(p.stdout)
 
