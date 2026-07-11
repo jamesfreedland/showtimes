@@ -1,0 +1,17 @@
+name: test-us-fetch
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: probe fandango and chains from US IP
+        run: |
+          for u in "https://www.fandango.com/village-east-by-angelika-aacon/theater-page" \
+                   "https://www.fandango.com/amc-kips-bay-15-aabqs/theater-page" \
+                   "https://angelikafilmcenter.com/nyc"; do
+            code=$(curl -sL -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -o /tmp/page.html -w "%{http_code}" "$u")
+            size=$(wc -c < /tmp/page.html)
+            blocked=$(grep -c -m1 -E "Just a moment|A Message To Our Fans|not available in your region" /tmp/page.html || true)
+            echo "== $u -> $code size=$size blockmarker=$blocked"
+            grep -oE '"@type" ?: ?"(ScreeningEvent|Movie|MovieTheater)"' /tmp/page.html | sort | uniq -c || true
+          done
