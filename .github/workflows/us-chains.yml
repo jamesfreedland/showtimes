@@ -1,0 +1,21 @@
+name: us-chains
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "40 3 * * *"   # 03:40 UTC daily, well before the Mac's 07:30 CEST run
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: fetch NYC chain showtimes (US IP)
+        run: python3 scripts/fetch_chains.py
+      - name: commit data
+        run: |
+          git config user.name "showtimes-bot"
+          git config user.email "actions@github.com"
+          git add data/chains-nyc.json
+          git diff --cached --quiet || git commit -m "chains-nyc $(date -u +%F)"
+          git push
