@@ -4,14 +4,21 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: probe fandango and chains from US IP
+      - name: probe chain-theater sources from US IP
         run: |
-          for u in "https://www.fandango.com/village-east-by-angelika-aacon/theater-page" \
-                   "https://www.fandango.com/amc-kips-bay-15-aabqs/theater-page" \
-                   "https://angelikafilmcenter.com/nyc"; do
-            code=$(curl -sL -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" -o /tmp/page.html -w "%{http_code}" "$u")
-            size=$(wc -c < /tmp/page.html)
-            blocked=$(grep -c -m1 -E "Just a moment|A Message To Our Fans|not available in your region" /tmp/page.html || true)
-            echo "== $u -> $code size=$size blockmarker=$blocked"
-            grep -oE '"@type" ?: ?"(ScreeningEvent|Movie|MovieTheater)"' /tmp/page.html | sort | uniq -c || true
-          done
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+          probe () {
+            code=$(curl -sL -A "$UA" --max-time 25 -o /tmp/page.html -w "%{http_code}" "$1" || echo ERR)
+            size=$(wc -c < /tmp/page.html 2>/dev/null || echo 0)
+            marker=$(grep -o -m1 -E "Just a moment|A Message To Our Fans|not available in your region|Access Denied|Pardon Our Interruption" /tmp/page.html || echo none)
+            times=$(grep -c -oE '[0-9]{1,2}:[0-9]{2} ?[apAP][mM]' /tmp/page.html || echo 0)
+            echo "RESULT | $2 | code=$code size=$size wall=$marker timeish=$times"
+          }
+          probe "https://www.fandango.com/village-east-by-angelika-aacon/theater-page" fandango-villageeast
+          probe "https://www.fandango.com/amc-kips-bay-15-aabqs/theater-page" fandango-amc
+          probe "https://www.atomtickets.com/theaters/amc-kips-bay-15" atom-amc
+          probe "https://www.moviefone.com/theaters/amc-kips-bay-15/9629/showtimes/" moviefone-amc
+          probe "https://www.amctheatres.com/movie-theatres/new-york-city/amc-kips-bay-15/showtimes" amc-direct
+          probe "https://www.regmovies.com/theatres/regal-union-square-0306" regal-direct
+          probe "https://angelikafilmcenter.com/nyc" angelika-direct
+          probe "https://angelikafilmcenter.com/villageeast" villageeast-direct
