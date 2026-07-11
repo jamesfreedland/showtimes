@@ -8,25 +8,25 @@ that file raw from the repo.
 """
 import json
 import re
+import subprocess
 import sys
 import time
-import urllib.request
 from datetime import date, timedelta
 from pathlib import Path
 
 NAPI = ("https://www.fandango.com/napi/theaterswithshowtimes"
         "?zipCode=10003&limit=50&date={d}&filter=open-theaters")
-UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/126.0.0.0 Safari/537.36",
-      "Referer": "https://www.fandango.com/"}
+UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 DAYS = 8
 
 
 def get(url):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return json.load(r)
+    # curl, not urllib: Fandango 403s Python's TLS fingerprint even from US IPs
+    p = subprocess.run(["curl", "-sL", "--fail", "--max-time", "60",
+                        "-A", UA, url],
+                       capture_output=True, check=True)
+    return json.loads(p.stdout)
 
 
 def iso_start(ticketing_date):
