@@ -4,13 +4,13 @@ jobs:
   grab:
     runs-on: ubuntu-latest
     steps:
-      - name: fetch sample pages
+      - name: fetch napi endpoints
         run: |
           UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
           mkdir -p pages
-          curl -sL -A "$UA" "https://www.fandango.com/village-east-by-angelika-aacon/theater-page" -o pages/fandango-ve.html
-          curl -sL -A "$UA" "https://www.fandango.com/10003_movietheaters" -o pages/fandango-10003.html
-          curl -sL -A "$UA" "https://www.amctheatres.com/movie-theatres/new-york-city/amc-kips-bay-15/showtimes" -o pages/amc-kipsbay.html
+          D=$(date -u +%Y-%m-%d)
+          curl -sL -A "$UA" -H "Referer: https://www.fandango.com/" "https://www.fandango.com/napi/theaterMovieShowtimes/AACON?startDate=$D" -o pages/napi-ve.json -w "ve: %{http_code} %{size_download}\n"
+          curl -sL -A "$UA" -H "Referer: https://www.fandango.com/" "https://www.fandango.com/napi/theaterswithshowtimes?zipCode=10003&limit=50&date=$D&filter=open-theaters" -o pages/napi-zip.json -w "zip: %{http_code} %{size_download}\n"
           ls -la pages/
       - uses: actions/upload-artifact@v4
         with:
